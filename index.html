@@ -1,0 +1,529 @@
+<title>레진 팩토리</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column, mold gallery first (the booth's menu), then a short booking form; operator tab is a separate view. */
+:root{
+  --bg:#fff2f5;
+  --surface:#ffffff;
+  --fg:#3a2730;
+  --muted:#8d6f7a;
+  --line:#f0d6de;
+  --accent:#23897f;
+  --accent-ink:#ffffff;
+  --sel:#e4f5f2;
+  --warn-bg:#fff0d9;
+  --warn-fg:#8a4b00;
+  --bad:#b42318;
+  --ok:#1f7a4d;
+  --font-display:'Jua','Noto Sans KR',system-ui,sans-serif;
+  --font-body:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1418;--surface:#2a1f25;--fg:#f9e8ee;--muted:#bb9ea9;--line:#413139;
+    --accent:#5ccfc2;--accent-ink:#0d2a27;--sel:#1f3a38;--warn-bg:#3a2c14;--warn-fg:#f3c67a;
+    --bad:#ff8f84;--ok:#7fd9a8;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1418;--surface:#2a1f25;--fg:#f9e8ee;--muted:#bb9ea9;--line:#413139;
+  --accent:#5ccfc2;--accent-ink:#0d2a27;--sel:#1f3a38;--warn-bg:#3a2c14;--warn-fg:#f3c67a;
+  --bad:#ff8f84;--ok:#7fd9a8;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 24px;
+}
+.wrap{max-width:980px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;margin-bottom:18px}
+.brand h1{font-family:var(--font-display);font-weight:400;font-size:clamp(34px,8vw,52px);line-height:1.05;margin:0;color:var(--accent);letter-spacing:.01em}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.tabs button{font:inherit;font-weight:500;border:0;background:transparent;color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer;min-height:40px}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.banner{background:var(--warn-bg);color:var(--warn-fg);border-radius:12px;padding:10px 14px;margin:0 0 16px;font-size:14px}
+.step{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}
+.step span{font-family:var(--font-display);background:var(--accent);color:var(--accent-ink);width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;font-size:15px;flex:none}
+.step h2{font-size:18px;margin:0;font-weight:700}
+.step small{color:var(--muted);font-size:13px}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:820px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.mold{
+  position:relative;font:inherit;color:inherit;text-align:center;cursor:pointer;
+  background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:12px 8px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;
+}
+.mold:hover{border-color:var(--accent)}
+.mold[aria-pressed="true"]{border-color:var(--accent);background:var(--sel);box-shadow:0 0 0 2px var(--accent)}
+.mold .no{position:absolute;top:8px;left:10px;font-family:var(--font-display);font-size:15px;color:var(--muted)}
+.mold[aria-pressed="true"] .no{color:var(--accent)}
+.mold .art{width:78%;max-width:104px;aspect-ratio:1}
+.mold .art svg{width:100%;height:100%;display:block}
+.mold .nm{font-weight:700;font-size:15px}
+.mold .cnt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mold .cnt b{color:var(--fg);font-size:15px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+form .row{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:640px){form .row{grid-template-columns:1fr 1fr}}
+label{display:block;font-weight:500;font-size:14px;margin-bottom:6px}
+input,select{
+  font:inherit;color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;
+  padding:11px 12px;width:100%;min-height:46px;min-width:0
+}
+.chosen{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border-radius:12px;background:var(--sel);min-height:52px}
+.chosen .art{width:36px;height:36px;flex:none}
+.chosen .art svg{width:100%;height:100%;display:block}
+.chosen.empty{background:var(--bg);color:var(--muted)}
+.err{color:var(--bad);font-size:13px;min-height:1.3em;margin:6px 0 0}
+.btn{
+  font:inherit;font-weight:700;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);
+  padding:12px 20px;min-height:48px;cursor:pointer
+}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn.small{padding:6px 12px;min-height:36px;font-size:13px;border-radius:10px}
+.btn.danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
+.btn.danger.armed{background:var(--bad);color:var(--surface)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+
+.pick{
+  position:sticky;bottom:0;margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--surface);border:1.5px solid var(--accent);border-radius:16px;padding:10px 12px 10px 16px;
+  margin-bottom:max(0px,env(safe-area-inset-bottom,0px));
+}
+.pick span{min-width:0;font-weight:700}
+
+.done{text-align:center;padding:24px 16px}
+.done .art{width:96px;height:96px;margin:0 auto 8px}
+.done .art svg{width:100%;height:100%}
+.done h2{font-family:var(--font-display);font-weight:400;font-size:30px;margin:0 0 6px;color:var(--accent)}
+.done dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;max-width:320px;margin:14px auto;text-align:left}
+.done dt{color:var(--muted)}
+.done dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+
+/* operator */
+.lock{max-width:360px;margin:30px auto}
+.lock h2{margin:0 0 4px;font-size:18px}
+.lock p{margin:0 0 14px;color:var(--muted);font-size:14px}
+.sum{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;font-variant-numeric:tabular-nums}
+.chip b{font-size:15px}
+.tools{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
+@media (min-width:640px){.tools{grid-template-columns:2fr 1fr 1fr}}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{
+  display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:10px 12px
+}
+@media (min-width:720px){.item{grid-template-columns:auto 1.1fr 1.2fr auto}}
+.item .q{font-family:var(--font-display);font-size:18px;color:var(--muted);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.item .who{min-width:0}
+.item .who b{display:block;overflow-wrap:anywhere}
+.item .who span{color:var(--muted);font-size:13px;user-select:all;font-variant-numeric:tabular-nums}
+.item .what{display:flex;align-items:center;gap:8px;min-width:0}
+.item .what .art{width:34px;height:34px;flex:none}
+.item .what .art svg{width:100%;height:100%;display:block}
+.item .btns{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}
+@media (min-width:720px){.item .btns{grid-column:auto;justify-content:flex-end}}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.pill.wait{background:var(--warn-bg);color:var(--warn-fg)}
+.pill.ok{background:var(--sel);color:var(--ok)}
+.empty-note{color:var(--muted);text-align:center;padding:28px 12px}
+textarea.fallback{width:100%;min-height:120px;margin-top:10px;font:inherit;font-size:13px;background:var(--bg);color:var(--fg);border:1.5px solid var(--line);border-radius:12px;padding:10px}
+@media (prefers-reduced-motion:no-preference){.mold{transition:border-color .12s, background-color .12s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>레진 팩토리</h1>
+      <p>워리스톤 만들기 · 축제 부스 예약</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="화면 선택">
+      <button type="button" role="tab" id="tab-reserve" aria-selected="true">예약하기</button>
+      <button type="button" role="tab" id="tab-operator" aria-selected="false">부스 운영자</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <main id="view-reserve">
+    <section id="booking">
+      <div class="step"><span>1</span><h2>몰드 고르기</h2><small>숫자는 지금까지 예약한 사람 수예요</small></div>
+      <div class="grid" id="grid"></div>
+
+      <div class="step"><span>2</span><h2>예약자 정보</h2></div>
+      <form class="card" id="f" novalidate>
+        <div class="row">
+          <div>
+            <label for="in-name">이름</label>
+            <input id="in-name" name="name" maxlength="20" autocomplete="name" placeholder="홍길동">
+          </div>
+          <div>
+            <label for="in-phone">전화번호</label>
+            <input id="in-phone" name="phone" inputmode="tel" maxlength="13" autocomplete="tel" placeholder="010-1234-5678">
+          </div>
+        </div>
+        <div class="chosen empty" id="chosen">위에서 몰드를 골라 주세요</div>
+        <p class="err" id="form-err" role="alert"></p>
+        <div class="actions"><button class="btn" id="submit" type="submit">예약하기</button></div>
+      </form>
+    </section>
+
+    <section id="done" class="card done" hidden>
+      <div class="art" id="done-art"></div>
+      <h2>예약이 접수됐어요</h2>
+      <p>부스에서 이 화면을 보여 주세요.</p>
+      <dl>
+        <dt>이름</dt><dd id="d-name"></dd>
+        <dt>전화번호</dt><dd id="d-phone"></dd>
+        <dt>몰드</dt><dd id="d-mold"></dd>
+      </dl>
+      <button class="btn ghost" type="button" id="again">다른 예약 하기</button>
+    </section>
+
+    <div class="pick" id="pick" hidden>
+      <span id="pick-text"></span>
+      <button class="btn small" type="button" id="pick-go">정보 입력</button>
+    </div>
+  </main>
+
+  <main id="view-operator" hidden>
+    <section class="card lock" id="lock">
+      <h2>운영자 확인</h2>
+      <p>부스 운영자 비밀번호를 입력해 주세요.</p>
+      <form id="lock-form" novalidate>
+        <label for="in-pw">비밀번호</label>
+        <input id="in-pw" type="password" inputmode="numeric" autocomplete="off" maxlength="12">
+        <p class="err" id="pw-err" role="alert"></p>
+        <div class="actions"><button class="btn" type="submit">들어가기</button></div>
+      </form>
+    </section>
+
+    <section id="panel" hidden>
+      <div class="actions" style="margin:0 0 12px;justify-content:space-between">
+        <h2 style="margin:0;font-size:18px">예약 현황</h2>
+        <div class="actions" style="margin:0">
+          <button class="btn ghost small" type="button" id="copy">목록 복사</button>
+          <button class="btn ghost small" type="button" id="relock">잠그기</button>
+        </div>
+      </div>
+      <p class="banner" id="admin-note" hidden></p>
+      <div class="sum" id="sum"></div>
+      <div class="tools">
+        <div><label for="q">이름·전화번호 검색</label><input id="q" type="search" placeholder="검색"></div>
+        <div><label for="f-mold">몰드</label><select id="f-mold"></select></div>
+        <div><label for="f-status">상태</label>
+          <select id="f-status"><option value="">전체</option><option value="대기">대기</option><option value="완료">완료</option></select>
+        </div>
+      </div>
+      <div id="copy-fallback" hidden>
+        <p class="err" style="color:var(--muted)">복사가 막혀 있어요. 아래 내용을 직접 선택해 복사해 주세요.</p>
+        <textarea class="fallback" id="copy-text" readonly></textarea>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var MOLDS=[
+    {n:1,name:'별',svg:'<g stroke="#e3d48e" stroke-width="6" stroke-linejoin="round" fill="#f4e8a8"><path d="M50 8 L62.3 35 L91.85 38.4 L69.97 58.5 L75.86 87.6 L50 73 L24.14 87.6 L30.03 58.5 L8.15 38.4 L37.66 35Z"/></g><g transform="translate(50 54) scale(.55) translate(-50 -52)"><path d="M50 8 L62.3 35 L91.85 38.4 L69.97 58.5 L75.86 87.6 L50 73 L24.14 87.6 L30.03 58.5 L8.15 38.4 L37.66 35Z" fill="#fbf3c9" stroke="#fbf3c9" stroke-width="8" stroke-linejoin="round"/></g>'},
+    {n:2,name:'고양이 발바닥',svg:'<ellipse cx="50" cy="64" rx="31" ry="25" fill="#f6e6ec"/><ellipse cx="50" cy="65" rx="22" ry="17" fill="#f4b6c9"/><g fill="#f6e6ec"><circle cx="19" cy="44" r="11"/><circle cx="38" cy="25" r="11"/><circle cx="62" cy="25" r="11"/><circle cx="81" cy="44" r="11"/></g><g fill="#f4b6c9"><circle cx="19" cy="44" r="6.5"/><circle cx="38" cy="25" r="6.5"/><circle cx="62" cy="25" r="6.5"/><circle cx="81" cy="44" r="6.5"/></g>'},
+    {n:3,name:'물방울',svg:'<path d="M50 8 C60 22 80 44 80 64 C80 84 66 94 50 94 C34 94 20 84 20 64 C20 44 40 22 50 8Z" fill="#a9d8ef"/><ellipse cx="50" cy="68" rx="19" ry="17" fill="#c7e8f7"/>'},
+    {n:4,name:'꽃',svg:'<g fill="#f7d3e1"><circle cx="76" cy="50" r="17"/><circle cx="63" cy="72.5" r="17"/><circle cx="37" cy="72.5" r="17"/><circle cx="24" cy="50" r="17"/><circle cx="37" cy="27.5" r="17"/><circle cx="63" cy="27.5" r="17"/><circle cx="50" cy="50" r="26"/></g><circle cx="50" cy="50" r="17" fill="#f2bdd2"/>'},
+    {n:5,name:'얼굴 베이스',svg:'<path d="M50 14 C78 12 94 30 92 54 C90 78 70 90 48 88 C24 86 8 72 10 50 C12 28 28 16 50 14Z" fill="#b8e8cf"/><ellipse cx="50" cy="56" rx="29" ry="23" fill="#d3f2e2"/>'},
+    {n:6,name:'토끼',svg:'<ellipse cx="33" cy="24" rx="10" ry="20" fill="#f3c3da"/><ellipse cx="67" cy="24" rx="10" ry="20" fill="#f3c3da"/><ellipse cx="50" cy="63" rx="38" ry="30" fill="#f3c3da"/><ellipse cx="50" cy="66" rx="26" ry="20" fill="#f9dde9"/>'},
+    {n:7,name:'검은 고양이',svg:'<path d="M12 14 L35 33 Q50 29 65 33 L88 14 L91 58 Q91 90 50 90 Q9 90 9 58Z" fill="#2a2a30"/><ellipse cx="50" cy="64" rx="27" ry="20" fill="#44444d"/><path d="M22 52 Q24 42 32 38" stroke="#8c8c98" stroke-width="3" fill="none" stroke-linecap="round"/>'},
+    {n:8,name:'곰',svg:'<circle cx="20" cy="24" r="13" fill="#8b5a44"/><circle cx="80" cy="24" r="13" fill="#8b5a44"/><circle cx="20" cy="24" r="6" fill="#b17b64"/><circle cx="80" cy="24" r="6" fill="#b17b64"/><ellipse cx="50" cy="58" rx="40" ry="34" fill="#8b5a44"/><ellipse cx="50" cy="62" rx="27" ry="21" fill="#a97058"/>'},
+    {n:9,name:'하트',svg:'<path d="M50 90 C20 67 7 49 7 34 C7 20 18 11 31 11 C40 11 47 16 50 24 C53 16 60 11 69 11 C82 11 93 20 93 34 C93 49 80 67 50 90Z" fill="#f2a1b3"/><path d="M50 74 C32 60 22 48 22 38 C22 31 27 26 33 26 C41 26 47 31 50 38 C53 31 59 26 67 26 C73 26 78 31 78 38 C78 48 68 60 50 74Z" fill="#f8c4d0"/>'},
+    {n:10,name:'라운드컷',svg:'<polygon points="88.8,66.1 66.1,88.8 33.9,88.8 11.2,66.1 11.2,33.9 33.9,11.2 66.1,11.2 88.8,33.9" fill="#bfd9e8"/><polygon points="76,60 60,76 40,76 24,60 24,40 40,24 60,24 76,40" fill="#dcedf6"/><path d="M24 40 L40 24 M60 24 L76 40 M76 60 L60 76 M40 76 L24 60" stroke="#bfd9e8" stroke-width="3"/>'},
+    {n:11,name:'거북이',svg:'<g fill="#f7e48a"><circle cx="50" cy="19" r="12"/><circle cx="19" cy="37" r="10"/><circle cx="81" cy="37" r="10"/><circle cx="21" cy="81" r="10"/><circle cx="79" cy="81" r="10"/><circle cx="50" cy="56" r="33"/></g><circle cx="50" cy="56" r="23" fill="#fbf0b3"/><g stroke="#e2cc62" stroke-width="2.4" stroke-linecap="round"><path d="M38 44 L62 68 M62 44 L38 68 M32 56 L44 44 M56 44 L68 56 M68 56 L56 68 M44 68 L32 56"/></g><circle cx="46" cy="18" r="2.2" fill="#2a2a30"/><circle cx="54" cy="18" r="2.2" fill="#2a2a30"/>'},
+    {n:12,name:'집',svg:'<path d="M20 48 L50 26 L80 48 L80 90 L20 90Z" fill="#fbf0a2"/><path d="M32 90 L32 62 Q50 44 68 62 L68 90Z" fill="#f4e585"/><rect x="66" y="12" width="12" height="22" fill="#e03b3b"/><path d="M8 52 L50 16 L92 52" stroke="#e03b3b" stroke-width="14" fill="none" stroke-linejoin="miter"/>'},
+    {n:13,name:'토마토',svg:'<ellipse cx="50" cy="57" rx="40" ry="35" fill="#e8472d"/><ellipse cx="50" cy="63" rx="26" ry="21" fill="#cf3a22"/><path d="M50 22 L47 12 M50 22 L56 14" stroke="#4aa843" stroke-width="5" stroke-linecap="round"/><circle cx="41" cy="38" r="2.3" fill="#2a2a30"/><circle cx="59" cy="38" r="2.3" fill="#2a2a30"/><path d="M44 45 Q50 48 56 45" stroke="#2a2a30" stroke-width="2.2" fill="none" stroke-linecap="round"/>'},
+    {n:14,name:'네잎클로버',svg:'<g fill="#a5d86a"><circle cx="33" cy="33" r="21"/><circle cx="67" cy="33" r="21"/><circle cx="33" cy="67" r="21"/><circle cx="67" cy="67" r="21"/><rect x="33" y="33" width="34" height="34"/></g><path d="M52 84 L58 98 L67 93 L60 80Z" fill="#8bc152"/><circle cx="50" cy="50" r="14" fill="#8fc65a"/><g stroke="#c4ea92" stroke-width="2.4" stroke-linecap="round"><path d="M26 26 L36 36 M74 26 L64 36 M26 74 L36 64 M74 74 L64 64"/></g>'}
+  ];
+  var byN={};MOLDS.forEach(function(m){byN[m.n]=m;});
+  function art(m){return '<svg viewBox="0 0 100 100" aria-hidden="true">'+m.svg+'</svg>';}
+
+  var $=function(s){return document.querySelector(s);};
+  function h(tag,attrs){
+    var e=document.createElement(tag);
+    Object.keys(attrs||{}).forEach(function(k){
+      var v=attrs[k];
+      if(k==='class')e.className=v;
+      else if(k.indexOf('on')===0)e.addEventListener(k.slice(2),v);
+      else if(v!==false&&v!=null)e.setAttribute(k,v===true?'':v);
+    });
+    for(var i=2;i<arguments.length;i++){
+      var kid=arguments[i];
+      if(kid==null||kid===false)continue;
+      e.append(kid.nodeType?kid:document.createTextNode(String(kid)));
+    }
+    return e;
+  }
+
+  var S={db:null,user:null,uid:null,canWrite:null,counts:null,sel:null,unlocked:false,rows:[],adminOn:false,adminErr:null,slotsErr:false,ready:false,busy:false,armed:null};
+
+  /* ---------- gallery ---------- */
+  var grid=$('#grid');
+  MOLDS.forEach(function(m){
+    var a=h('span',{class:'art'});a.innerHTML=art(m);
+    grid.append(h('button',{type:'button',class:'mold','data-n':m.n,'aria-pressed':'false',onclick:function(){select(m.n);}},
+      h('span',{class:'no'},m.n),a,h('span',{class:'nm'},m.name),
+      h('span',{class:'cnt'},'예약 ',h('b',{'data-c':m.n},'–'),'명')));
+  });
+
+  function renderCounts(){
+    MOLDS.forEach(function(m){
+      var b=grid.querySelector('[data-c="'+m.n+'"]');
+      if(b)b.textContent=S.counts?String(S.counts[m.n]||0):'–';
+    });
+  }
+
+  function select(n){
+    S.sel=n;
+    grid.querySelectorAll('.mold').forEach(function(b){b.setAttribute('aria-pressed',String(+b.dataset.n===n));});
+    var m=byN[n],c=$('#chosen');
+    c.className='chosen';c.textContent='';
+    var a=h('span',{class:'art'});a.innerHTML=art(m);
+    c.append(a,h('span',null,m.n+'번 '+m.name));
+    $('#pick').hidden=false;$('#pick-text').textContent=m.n+'번 '+m.name;
+    $('#form-err').textContent='';
+  }
+  $('#pick-go').addEventListener('click',function(){$('#in-name').focus();});
+
+  /* ---------- banner ---------- */
+  function banner(){
+    var b=$('#banner'),msg='';
+    if(S.ready&&!S.db)msg='예약 저장소에 연결하지 못했어요. 로그인한 상태에서 링크를 다시 열어 주세요.';
+    else if(S.slotsErr)msg='예약 현황을 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.';
+    else if(S.db&&S.counts===null&&S.slow)msg='예약 현황을 불러오는 데 시간이 걸리고 있어요.';
+    else if(S.db&&S.canWrite===false)msg='이 계정은 보기 전용이라 예약을 저장할 수 없어요. 부스 직원에게 문의해 주세요.';
+    b.hidden=!msg;b.textContent=msg;
+  }
+  function canBook(){return !!S.db&&!!S.uid&&S.canWrite!==false;}
+
+  /* ---------- booking ---------- */
+  var phoneEl=$('#in-phone');
+  phoneEl.addEventListener('input',function(){
+    var d=phoneEl.value.replace(/\D/g,'').slice(0,11),o=d;
+    if(d.length>7)o=d.slice(0,3)+'-'+d.slice(3,d.length-4)+'-'+d.slice(-4);
+    else if(d.length>3)o=d.slice(0,3)+'-'+d.slice(3);
+    phoneEl.value=o;
+  });
+  function formErr(t){$('#form-err').textContent=t;}
+
+  $('#f').addEventListener('submit',function(e){
+    e.preventDefault();
+    if(S.busy)return;
+    var name=$('#in-name').value.trim(),digits=phoneEl.value.replace(/\D/g,'');
+    if(!name)return formErr('이름을 입력해 주세요.');
+    if(!/^01\d{8,9}$/.test(digits))return formErr('전화번호를 010으로 시작하는 번호로 입력해 주세요.');
+    if(!S.sel)return formErr('몰드를 먼저 골라 주세요.');
+    if(!canBook())return formErr('지금은 예약을 저장할 수 없어요. 페이지 위쪽 안내를 확인해 주세요.');
+    formErr('');
+    var phone=digits.length===11?digits.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3'):digits.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3');
+    var rec={name:name,phone:phone,mold:S.sel,createdAt:Date.now(),status:'대기'};
+    S.busy=true;$('#submit').disabled=true;
+    var db=S.db,rid=db.collection('slots').doc().id,ref=db.doc('reservations/'+S.uid);
+    ref.get().then(function(snap){
+      var items={};items[rid]=rec;
+      return snap.exists?ref.update({items:items}):ref.set({items:items});
+    }).then(function(){
+      return db.doc('slots/'+rid).set({mold:rec.mold,at:rec.createdAt});
+    }).then(function(){
+      showDone(rec);
+    }).catch(function(err){
+      var c=err&&err.code;
+      if(c==='invalid_argument')formErr('이 계정으로는 예약을 저장할 수 없어요. 부스 직원에게 문의해 주세요.');
+      else if(c==='quota_exceeded')formErr('예약 저장 공간이 가득 찼어요. 부스 직원에게 알려 주세요.');
+      else formErr('저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    }).then(function(){S.busy=false;$('#submit').disabled=false;});
+  });
+
+  function showDone(rec){
+    var m=byN[rec.mold];
+    $('#done-art').innerHTML=art(m);
+    $('#d-name').textContent=rec.name;$('#d-phone').textContent=rec.phone;$('#d-mold').textContent=m.n+'번 '+m.name;
+    $('#booking').hidden=true;$('#pick').hidden=true;$('#done').hidden=false;
+    window.scrollTo(0,0);
+  }
+  $('#again').addEventListener('click',function(){
+    $('#done').hidden=true;$('#booking').hidden=false;
+    $('#in-name').value='';phoneEl.value='';
+    S.sel=null;grid.querySelectorAll('.mold').forEach(function(b){b.setAttribute('aria-pressed','false');});
+    var c=$('#chosen');c.className='chosen empty';c.textContent='위에서 몰드를 골라 주세요';
+  });
+
+  /* ---------- tabs / routing ---------- */
+  function route(){
+    var op=location.hash==='#operator';
+    $('#view-reserve').hidden=op;$('#view-operator').hidden=!op;
+    $('#tab-reserve').setAttribute('aria-selected',String(!op));
+    $('#tab-operator').setAttribute('aria-selected',String(op));
+    if(op)gate();
+  }
+  $('#tab-reserve').addEventListener('click',function(){location.hash='reserve';});
+  $('#tab-operator').addEventListener('click',function(){location.hash='operator';});
+  window.addEventListener('hashchange',route);
+
+  /* ---------- operator ---------- */
+  try{S.unlocked=sessionStorage.getItem('rf-op')==='1';}catch(e){}
+  $('#lock-form').addEventListener('submit',function(e){
+    e.preventDefault();
+    var pw=$('#in-pw');
+    if(pw.value.trim()==='0806'){
+      S.unlocked=true;try{sessionStorage.setItem('rf-op','1');}catch(x){}
+      pw.value='';$('#pw-err').textContent='';gate();
+    }else{$('#pw-err').textContent='비밀번호가 맞지 않아요.';pw.select();}
+  });
+  $('#relock').addEventListener('click',function(){
+    S.unlocked=false;try{sessionStorage.removeItem('rf-op');}catch(x){}gate();
+  });
+
+  var fm=$('#f-mold');
+  fm.append(h('option',{value:''},'전체'));
+  MOLDS.forEach(function(m){fm.append(h('option',{value:m.n},m.n+'번 '+m.name));});
+  ['#q','#f-mold','#f-status'].forEach(function(s){$(s).addEventListener('input',renderList);});
+
+  function isAdmin(){return !!(S.user&&S.user.canEdit&&S.user.canEdit());}
+
+  function gate(){
+    $('#lock').hidden=S.unlocked;$('#panel').hidden=!S.unlocked;
+    if(!S.unlocked)return;
+    var note=$('#admin-note'),msg='';
+    if(S.ready&&!S.db)msg='예약 저장소에 연결하지 못했어요.';
+    else if(S.ready&&!isAdmin())msg='이 계정은 예약자 정보를 볼 수 없어요. 예약 페이지를 만든 계정이나 편집 권한이 있는 계정으로 열어 주세요.';
+    else if(S.adminErr)msg='예약자 목록을 불러오지 못했어요. 새로고침해 주세요.';
+    note.hidden=!msg;note.textContent=msg;
+    if(S.ready&&S.db&&isAdmin()&&!S.adminOn)startAdmin();
+    renderList();
+  }
+
+  function startAdmin(){
+    S.adminOn=true;
+    S.db.collection('reservations').onSnapshot(function(snap){
+      var rows=[];
+      snap.docs.forEach(function(d){
+        var it=(d.data()||{}).items||{};
+        Object.keys(it).forEach(function(rid){
+          var r=it[rid];if(!r)return;
+          rows.push({uid:d.id,rid:rid,name:r.name||'',phone:r.phone||'',mold:r.mold,createdAt:r.createdAt||0,status:r.status||'대기'});
+        });
+      });
+      rows.sort(function(a,b){return a.createdAt-b.createdAt;});
+      S.rows=rows;S.adminErr=null;gate();
+    },function(){S.adminErr=true;S.adminOn=false;gate();});
+  }
+
+  function fmtTime(t){
+    if(!t)return '';
+    var d=new Date(t),p=function(n){return String(n).padStart(2,'0');};
+    return p(d.getHours())+':'+p(d.getMinutes());
+  }
+
+  function filtered(){
+    var q=$('#q').value.trim().toLowerCase(),qd=q.replace(/\D/g,''),mo=$('#f-mold').value,st=$('#f-status').value;
+    return S.rows.map(function(r,i){return Object.assign({q:i+1},r);}).filter(function(r){
+      if(mo&&String(r.mold)!==mo)return false;
+      if(st&&r.status!==st)return false;
+      if(q&&r.name.toLowerCase().indexOf(q)<0&&!(qd&&r.phone.replace(/\D/g,'').indexOf(qd)>=0))return false;
+      return true;
+    });
+  }
+
+  function renderList(){
+    if(!S.unlocked)return;
+    var wait=S.rows.filter(function(r){return r.status!=='완료';}).length,done=S.rows.length-wait;
+    var per={};S.rows.forEach(function(r){per[r.mold]=(per[r.mold]||0)+1;});
+    var sum=$('#sum');sum.textContent='';
+    sum.append(h('span',{class:'chip'},'전체 ',h('b',null,S.rows.length),'명'),
+      h('span',{class:'chip'},'대기 ',h('b',null,wait),'명'),h('span',{class:'chip'},'완료 ',h('b',null,done),'명'));
+    MOLDS.forEach(function(m){if(per[m.n])sum.append(h('span',{class:'chip'},m.n+'번 ',h('b',null,per[m.n])));});
+
+    var list=$('#list');list.textContent='';
+    var rows=filtered();
+    if(!rows.length){
+      list.append(h('p',{class:'empty-note'},S.rows.length?'조건에 맞는 예약이 없어요.':(isAdmin()?'아직 예약이 없어요. 예약이 들어오면 여기에 바로 나타나요.':'')));
+      return;
+    }
+    rows.forEach(function(r){
+      var m=byN[r.mold],a=h('span',{class:'art'});
+      if(m)a.innerHTML=art(m);
+      var armed=S.armed===r.rid;
+      list.append(h('div',{class:'item'},
+        h('span',{class:'q'},r.q),
+        h('div',{class:'who'},h('b',null,r.name),h('span',null,r.phone+' · '+fmtTime(r.createdAt))),
+        h('div',{class:'what'},a,h('span',null,m?m.n+'번 '+m.name:'-'),h('span',{class:'pill '+(r.status==='완료'?'ok':'wait')},r.status)),
+        h('div',{class:'btns'},
+          h('button',{type:'button',class:'btn small ghost',onclick:function(){toggle(r);}},r.status==='완료'?'대기로 되돌리기':'제작 완료'),
+          h('button',{type:'button',class:'btn small danger'+(armed?' armed':''),onclick:function(){remove(r);}},armed?'정말 삭제':'삭제'))));
+    });
+  }
+
+  function toggle(r){
+    var items={};items[r.rid]={status:r.status==='완료'?'대기':'완료'};
+    S.db.doc('reservations/'+r.uid).update({items:items}).catch(function(){flash('상태를 바꾸지 못했어요.');});
+  }
+  var armTimer=null;
+  function remove(r){
+    if(S.armed!==r.rid){
+      S.armed=r.rid;renderList();clearTimeout(armTimer);
+      armTimer=setTimeout(function(){S.armed=null;renderList();},3500);
+      return;
+    }
+    S.armed=null;clearTimeout(armTimer);
+    var db=S.db,ref=db.doc('reservations/'+r.uid);
+    ref.get().then(function(s){
+      var items=Object.assign({},(s.data()||{}).items||{});delete items[r.rid];
+      return Object.keys(items).length?ref.set({items:items}):ref.delete();
+    }).then(function(){return db.doc('slots/'+r.rid).delete();})
+    .catch(function(){flash('삭제하지 못했어요.');});
+  }
+  function flash(t){var n=$('#admin-note');n.hidden=false;n.textContent=t;}
+
+  $('#copy').addEventListener('click',function(){
+    var rows=filtered(),text=['번호\t이름\t전화번호\t몰드\t상태\t시간'].concat(rows.map(function(r){
+      var m=byN[r.mold];return [r.q,r.name,r.phone,m?m.n+'번 '+m.name:'',r.status,fmtTime(r.createdAt)].join('\t');
+    })).join('\n');
+    var fb=$('#copy-fallback'),ta=$('#copy-text');
+    function fallback(){fb.hidden=false;ta.value=text;ta.focus();ta.select();}
+    try{
+      navigator.clipboard.writeText(text).then(function(){fb.hidden=true;flash('목록을 복사했어요.');},fallback);
+    }catch(e){fallback();}
+  });
+
+  /* ---------- connect ---------- */
+  route();banner();
+  setTimeout(function(){if(S.db&&S.counts===null){S.slow=true;banner();}},10000);
+
+  var cl=window.claude&&window.claude.use?window.claude:null;
+  if(!cl){S.ready=true;banner();gate();}
+  else Promise.all([cl.use('db'),cl.use('user')]).then(function(res){
+    S.db=res[0];S.user=res[1];
+    return S.user&&S.user.id?S.user.id().then(function(id){S.uid=id;},function(){}):null;
+  }).then(function(){
+    if(S.user&&S.user.can){try{S.canWrite=S.user.can('data.write');}catch(e){}}
+    S.ready=true;
+    if(S.db){
+      S.db.collection('slots').onSnapshot(function(snap){
+        var c={};snap.docs.forEach(function(d){var m=(d.data()||{}).mold;c[m]=(c[m]||0)+1;});
+        S.counts=c;S.slow=false;S.slotsErr=false;renderCounts();banner();
+      },function(){S.slotsErr=true;banner();});
+    }
+    banner();gate();
+  },function(){S.ready=true;banner();gate();});
+})();
+</script>
